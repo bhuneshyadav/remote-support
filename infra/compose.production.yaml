@@ -1,0 +1,106 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: remote_support
+      POSTGRES_USER: remote_support
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remote_support -d remote_support"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3001
+      TRUST_PROXY_HOPS: 1
+      DATABASE_URL: postgresql://remote_support:${POSTGRES_PASSWORD}@postgres:5432/remote_support?schema=public
+      OIDC_ISSUER: ${OIDC_ISSUER:?Set OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:?Set OIDC_AUDIENCE}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:?Set OIDC_JWKS_URL}
+      SESSION_CODE_HMAC_KEY: ${SESSION_CODE_HMAC_KEY:?Set SESSION_CODE_HMAC_KEY}
+      SESSION_PENDING_MINUTES: 10
+      SESSION_MAX_MINUTES: 60
+      TURN_URLS: turn:${SUPPORT_DOMAIN:?Set SUPPORT_DOMAIN}:3478?transport=udp
+      TURN_SHARED_SECRET: ${TURN_SHARED_SECRET:?Set TURN_SHARED_SECRET}
+      WEB_ORIGIN: https://${SUPPORT_DOMAIN}
+      ALLOW_LOCAL_DEV_BYPASS: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      turn:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/web.Dockerfile
+      args:
+        VITE_API_BASE_URL: ""
+        VITE_ICE_SERVERS: "[]"
+        VITE_ALLOW_LOCAL_DEV_BYPASS: "false"
+        VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:?Set VITE_OIDC_AUTHORITY}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:?Set VITE_OIDC_CLIENT_ID}
+        VITE_OIDC_API_AUDIENCE: ${VITE_OIDC_API_AUDIENCE:?Set VITE_OIDC_API_AUDIENCE}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SUPPORT_DOMAIN: ${SUPPORT_DOMAIN:?Set SUPPORT_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.example:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+
+  turn:
+    image: coturn/coturn:4.6.3
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --realm=${SUPPORT_DOMAIN:?Set SUPPORT_DOMAIN}
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SHARED_SECRET:?Set TURN_SHARED_SECRET}
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --external-ip=${TURN_PUBLIC_IP:?Set TURN_PUBLIC_IP}/${TURN_PRIVATE_IP:?Set TURN_PRIVATE_IP}
+      - --no-tls
+      - --no-dtls
+      - --no-tcp-relay
+
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:

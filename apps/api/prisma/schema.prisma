@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  waiting_for_customer
+  awaiting_approval
+  approved
+  rejected
+  ended
+  expired
+}
+
+enum ActorType {
+  technician
+  customer
+  system
+}
+
+enum AuditEventType {
+  created
+  customer_joined
+  approved
+  rejected
+  viewing_granted
+  viewing_revoked
+  ended
+  expired
+}
+
+model Organization {
+  id        String           @id @default(uuid()) @db.Uuid
+  name      String
+  createdAt DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  members   Technician[]
+  sessions  SupportSession[]
+
+  @@map("organizations")
+}
+
+model Technician {
+  id             String       @id @db.VarChar(255)
+  organizationId String       @map("organization_id") @db.Uuid
+  displayName   String       @map("display_name")
+  role          String       @default("technician") @db.VarChar(32)
+  organization  Organization @relation(fields: [organizationId], references: [id])
+  sessions      SupportSession[]
+
+  @@map("technicians")
+}
+
+model SupportSession {
+  id                   String        @id @default(uuid()) @db.Uuid
+  organizationId       String        @map("organization_id") @db.Uuid
+  technicianId         String        @map("technician_id") @db.VarChar(255)
+  codeHash             String?       @map("code_hash") @db.VarChar(64)
+  decisionTokenHash    String?       @map("decision_token_hash") @db.VarChar(64)
+  customerAccessTokenHash String?    @map("customer_access_token_hash") @db.VarChar(64)
+  status               SessionStatus @default(waiting_for_customer)
+  screenViewingGranted Boolean       @default(false) @map("screen_viewing_granted")
+  purpose              String        @db.VarChar(240)
+  createdAt            DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  expiresAt            DateTime      @map("expires_at") @db.Timestamptz(6)
+  updatedAt            DateTime      @updatedAt @map("updated_at") @db.Timestamptz(6)
+  customerLabel        String?       @map("customer_label") @db.VarChar(120)
+  endedAt              DateTime?     @map("ended_at") @db.Timestamptz(6)
+  version              Int           @default(0)
+  organization         Organization  @relation(fields: [organizationId], references: [id])
+  technician           Technician    @relation(fields: [technicianId], references: [id])
+  auditEvents          AuditEvent[]
+
+  @@index([organizationId, createdAt])
+  @@index([technicianId, createdAt])
+  @@index([status, expiresAt])
+  @@map("support_sessions")
+}
+
+model AuditEvent {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  sessionId      String         @map("session_id") @db.Uuid
+  actorType      ActorType      @map("actor_type")
+  actorId        String?        @map("actor_id") @db.VarChar(255)
+  eventType      AuditEventType @map("event_type")
+  occurredAt     DateTime       @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  metadata       Json           @default("{}")
+  session        SupportSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId, occurredAt])
+  @@map("audit_events")
+}

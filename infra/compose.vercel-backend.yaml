@@ -1,0 +1,65 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: infra/api.Dockerfile
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3001
+      TRUST_PROXY_HOPS: 1
+      DATABASE_URL: ${DATABASE_URL:?Set the Supabase PostgreSQL session-pooler URL}
+      OIDC_ISSUER: ${OIDC_ISSUER:?Set OIDC_ISSUER}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:?Set OIDC_AUDIENCE}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:?Set OIDC_JWKS_URL}
+      SESSION_CODE_HMAC_KEY: ${SESSION_CODE_HMAC_KEY:?Set SESSION_CODE_HMAC_KEY}
+      SESSION_PENDING_MINUTES: 10
+      SESSION_MAX_MINUTES: 60
+      TURN_URLS: turn:${API_DOMAIN:?Set API_DOMAIN}:3478?transport=udp
+      TURN_SHARED_SECRET: ${TURN_SHARED_SECRET:?Set TURN_SHARED_SECRET}
+      WEB_ORIGIN: ${WEB_ORIGIN:?Set WEB_ORIGIN to the production Vercel origin}
+      ALLOW_LOCAL_DEV_BYPASS: "false"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3001/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?Set API_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.api.example:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+
+  turn:
+    image: coturn/coturn:4.6.3
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - -n
+      - --log-file=stdout
+      - --realm=${API_DOMAIN:?Set API_DOMAIN}
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SHARED_SECRET:?Set TURN_SHARED_SECRET}
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --external-ip=${TURN_PUBLIC_IP:?Set TURN_PUBLIC_IP}/${TURN_PRIVATE_IP:?Set TURN_PRIVATE_IP}
+      - --no-tls
+      - --no-dtls
+      - --no-tcp-relay
+
+volumes:
+  caddy-data:
+  caddy-config:

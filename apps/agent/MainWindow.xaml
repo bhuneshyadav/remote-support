@@ -1,0 +1,81 @@
+<Window x:Class="RemoteSupportAgent.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Remote Support" Height="700" Width="540"
+        MinHeight="560" MinWidth="440"
+        WindowStartupLocation="CenterScreen"
+        Closing="OnClosing">
+    <Grid Background="#F2F5FA">
+        <Border Margin="24" Padding="26" Background="White" CornerRadius="14">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <TextBlock Text="CUSTOMER-CONTROLLED SUPPORT"
+                               Foreground="#476493" FontWeight="Bold" FontSize="12"
+                               Margin="0,0,0,8" />
+                    <TextBlock Text="Join a support request" FontSize="25"
+                               FontWeight="Bold" Foreground="#172033" />
+                    <TextBlock Text="Enter the code provided by your technician. Nothing is shared until you approve."
+                               TextWrapping="Wrap" Margin="0,8,0,18" Foreground="#566276" />
+
+                    <TextBlock Text="Connection code" FontWeight="SemiBold" />
+                    <TextBox x:Name="CodeInput" Height="42" FontSize="20"
+                             CharacterCasing="Upper" MaxLength="16"
+                             VerticalContentAlignment="Center" Margin="0,6,0,8"
+                             AutomationProperties.Name="Connection code" />
+                    <Button x:Name="JoinButton" Content="Continue" Width="120"
+                            HorizontalAlignment="Left" Click="OnJoinClick" />
+
+                    <Border x:Name="RequestPanel" Visibility="Collapsed"
+                            Margin="0,18,0,0" Padding="18" Background="#F7F9FF"
+                            BorderBrush="#BFD0F1" BorderThickness="1" CornerRadius="10">
+                        <StackPanel>
+                            <TextBlock Text="Support request" FontSize="18" FontWeight="Bold" />
+                            <TextBlock x:Name="OrganizationText" Margin="0,12,0,0"
+                                       TextWrapping="Wrap" />
+                            <TextBlock x:Name="TechnicianText" Margin="0,5,0,0"
+                                       TextWrapping="Wrap" />
+                            <TextBlock x:Name="PurposeText" Margin="0,5,0,0"
+                                       TextWrapping="Wrap" />
+                            <TextBlock x:Name="ExpiryText" Margin="0,5,0,12"
+                                       TextWrapping="Wrap" />
+                            <Border Padding="12" Background="#FFF7DF" CornerRadius="7">
+                                <TextBlock Text="Approving the request does not share your screen. You must separately choose Share my screen. The technician cannot control your computer, and you can stop sharing at any time."
+                                           TextWrapping="Wrap" />
+                            </Border>
+                            <StackPanel x:Name="DecisionButtons" Orientation="Horizontal"
+                                        Margin="0,10,0,0">
+                                <Button x:Name="AllowButton" Content="Allow request"
+                                        Background="#2456C5" Click="OnAllowClick" />
+                                <Button x:Name="RejectButton" Content="Reject"
+                                        Background="#B42332" Click="OnRejectClick" />
+                            </StackPanel>
+                            <Button x:Name="ShareScreenButton" Content="Share my screen"
+                                    Background="#16803C" Visibility="Collapsed"
+                                    HorizontalAlignment="Left" Margin="0,10,0,0"
+                                    Click="OnShareScreenClick" />
+                            <Button x:Name="StopSharingButton" Content="Stop sharing"
+                                    Background="#B42332" Visibility="Collapsed"
+                                    HorizontalAlignment="Left" Margin="0,8,0,0"
+                                    Click="OnStopSharingClick" />
+                            <TextBlock x:Name="ShareNoticeText" Margin="0,8,0,0"
+                                       TextWrapping="Wrap" Foreground="#31425C" />
+                            <Button x:Name="EndButton" Content="Cancel or end request"
+                                    Background="#B42332" Visibility="Collapsed"
+                                    HorizontalAlignment="Left" Click="OnEndClick" />
+                            <Button x:Name="NewRequestButton" Content="Start another request"
+                                    Visibility="Collapsed" HorizontalAlignment="Left"
+                                    Click="OnNewRequestClick" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock x:Name="StatusText" Margin="0,16,0,0"
+                               TextWrapping="Wrap" Foreground="#31425C"
+                               AutomationProperties.LiveSetting="Polite" />
+                    <TextBlock x:Name="ErrorText" Margin="0,8,0,0"
+                               TextWrapping="Wrap" Foreground="#A11324"
+                               AutomationProperties.LiveSetting="Assertive" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>

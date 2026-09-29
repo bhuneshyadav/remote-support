@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: remote_support
+      POSTGRES_USER: remote_support
+      POSTGRES_PASSWORD: local-development-only
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remote_support -d remote_support"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  turn:
+    image: coturn/coturn:4.6.3
+    command:
+      - -n
+      - --log-file=stdout
+      - --realm=localhost
+      - --fingerprint
+      - --use-auth-secret
+      - --static-auth-secret=${TURN_SHARED_SECRET:-local-development-only-turn-secret-change-before-use}
+      - --listening-port=3478
+      - --min-port=49160
+      - --max-port=49200
+      - --no-tls
+      - --no-dtls
+      - --no-tcp-relay
+    ports:
+      - "127.0.0.1:3478:3478/udp"
+      - "127.0.0.1:49160-49200:49160-49200/udp"
+
+volumes:
+  postgres-data:
