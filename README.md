@@ -102,6 +102,7 @@ Vercel can host the Vite frontend and Supabase can host PostgreSQL, but this app
    - `VITE_API_BASE_URL=https://<your-api-domain>`
    - `VITE_ALLOW_LOCAL_DEV_BYPASS=false`
    - `VITE_OIDC_AUTHORITY`, `VITE_OIDC_CLIENT_ID`, and `VITE_OIDC_API_AUDIENCE` from the configured OIDC SPA/API.
+   Local technician bypass is ignored in production builds; production users must sign in through the configured OIDC provider.
 3. Create a Supabase project and a dedicated Prisma database user with the privileges required by Prisma migrations. On the Supabase **Connect** page, use the **Session pooler** connection string (port `5432`) for an IPv4 VPS; URL-encode reserved characters in its password. Copy `infra/vercel-backend.env.example` to `infra/vercel-backend.env` on a Linux VPS. Set `DATABASE_URL`, `API_DOMAIN`, the exact production Vercel web origin (custom domain or stable `*.vercel.app` origin), TURN public/private IPs, fresh secrets, and the real OIDC API settings. Do not put the database URL or its password in Vercel's frontend environment variables.
 4. In the OIDC provider, allow `https://<your-vercel-domain>/auth/callback` and the exact Vercel web origin. Provision the technician with the provider's exact `sub`.
 5. Open TCP ports 80/443 and UDP ports 3478 and 49160-49200 on the VPS. Deploy the API/relay stack; PostgreSQL remains managed by Supabase:

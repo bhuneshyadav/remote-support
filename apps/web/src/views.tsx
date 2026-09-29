@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { User } from "oidc-client-ts";
 import { isLocalDevBypassEnabled, setLocalDevAccessToken, userManager } from "./auth";
-import { api, type Session } from "./api";
+import { api, describeApiError, type Session } from "./api";
 import { ScreenViewer } from "./ScreenViewer";
 
 type CreatedSession = Session & { code: string };
@@ -82,8 +82,8 @@ function TechnicianDashboard() {
       setCreated(result);
       setPurpose("");
       await loadSessions(user.access_token);
-    } catch {
-      setError("Could not create the session. Please try again.");
+    } catch (error) {
+      setError(`Could not create the session: ${describeApiError(error)}`);
     } finally {
       setBusy(false);
     }
@@ -114,8 +114,8 @@ function TechnicianDashboard() {
         <p>Sign in through your organization to create a support request.</p>
         <button
           onClick={() => {
-            if (import.meta.env.VITE_ALLOW_LOCAL_DEV_BYPASS !== "true") {
-              setError("Local-dev bypass is disabled. Configure VITE_ALLOW_LOCAL_DEV_BYPASS=true to continue.");
+            if (!isLocalDevBypassEnabled()) {
+              void userManager.signinRedirect().catch(() => setError("Could not start organization sign-in. Check the production OIDC configuration."));
               return;
             }
             void setLocalDevAccessToken().then(() => {
@@ -123,7 +123,7 @@ function TechnicianDashboard() {
             }).catch(() => setError("Could not create the local technician session."));
           }}
         >
-          Continue to sign in
+          {isLocalDevBypassEnabled() ? "Continue to sign in" : "Sign in with your organization"}
         </button>
         {error && <p role="alert">{error}</p>}
       </main>

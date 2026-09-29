@@ -1,5 +1,5 @@
 ﻿import { afterEach, describe, expect, it, vi } from "vitest";
-import { api } from "./api";
+import { api, describeApiError } from "./api";
 
 describe("api client", () => {
   afterEach(() => vi.restoreAllMocks());
@@ -32,5 +32,13 @@ describe("api client", () => {
   it("rejects successful responses with invalid JSON", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("not-json", { status: 200 }));
     await expect(api("/api/v1/me")).rejects.toThrow("invalid_server_response");
+  });
+
+  it("explains when the frontend is pointed at a non-API URL", () => {
+    expect(describeApiError(new Error("invalid_server_response"))).toContain("VITE_API_BASE_URL");
+  });
+
+  it("explains when the API rejects an unprovisioned technician", () => {
+    expect(describeApiError(new Error("technician_not_provisioned"))).toContain("provisioned as a technician");
   });
 });

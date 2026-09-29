@@ -1,6 +1,7 @@
 import { User, UserManager, WebStorageStateStore } from "oidc-client-ts";
 
-const localDevBypassEnabled = import.meta.env.VITE_ALLOW_LOCAL_DEV_BYPASS === "true";
+const localDevBypassEnabled = !import.meta.env.PROD
+  && import.meta.env.VITE_ALLOW_LOCAL_DEV_BYPASS === "true";
 const apiAudience = import.meta.env.VITE_OIDC_API_AUDIENCE || "remote-support-api";
 
 const settings = {
