@@ -1,0 +1,10 @@
+{
+  "buildCommand": "npm run build --workspace @remote-support/contracts && npm run build --workspace @remote-support/web",
+  "outputDirectory": "apps/web/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

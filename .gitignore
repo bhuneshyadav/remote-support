@@ -1,0 +1,13 @@
+node_modules/
+dist/
+bin/
+obj/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+apps/api/prisma/*.db
+artifacts/
+infra/vercel-backend.env
+infra/production.env

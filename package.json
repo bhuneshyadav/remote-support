@@ -1,0 +1,22 @@
+{
+  "name": "remote-support",
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/contracts"
+  ],
+  "scripts": {
+    "dev": "npm run build --workspace @remote-support/contracts && concurrently -k -n api,web -c blue,green \"npm run dev --workspace @remote-support/api\" \"npm run dev --workspace @remote-support/web\"",
+    "build": "npm run build --workspace @remote-support/contracts && npm run build --workspace @remote-support/api && npm run build --workspace @remote-support/web",
+    "test": "npm run build --workspace @remote-support/contracts && npm run test --workspace @remote-support/contracts && npm run test --workspace @remote-support/api && npm run test --workspace @remote-support/web",
+    "agent:build": "dotnet build apps/agent/RemoteSupportAgent.csproj",
+    "db:generate": "npm run db:generate --workspace @remote-support/api",
+    "db:migrate": "npm run db:migrate --workspace @remote-support/api",
+    "db:deploy": "npm run db:deploy --workspace @remote-support/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "typescript": "^5.9.2"
+  }
+}
